@@ -1,0 +1,29 @@
+{
+  "name": "vector-tile-generator",
+  "version": "1.0.0",
+  "description": "Generate vector tiles from ArcGIS REST API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imaginerio/vector-tile-generator.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/imaginerio/vector-tile-generator/issues"
+  },
+  "homepage": "https://github.com/imaginerio/vector-tile-generator#readme",
+  "dependencies": {
+    "@mapbox/mbtiles": "^0.11.0",
+    "@mapbox/tilelive": "^6.1.0",
+    "@mapbox/tilelive-s3": "^7.0.1",
+    "axios": "^0.20.0",
+    "lodash": "^4.17.20",
+    "mapshaper": "^0.5.20",
+    "ora": "^5.1.0",
+    "tippecanoe": "^0.6.0"
+  }
+}
