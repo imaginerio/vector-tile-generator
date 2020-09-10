@@ -1,4 +1,5 @@
 const fs = require('fs').promises;
+const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const axios = require('axios');
@@ -21,12 +22,12 @@ const spinner = ora('Loading layer info').start();
 const loadFeatures = async (i, count, step, layer) =>
   axios
     .get(
-      `https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&outFields=objectid,nameshort,nameabbrev,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}`
+      `https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=objectid,nameshort,nameabbrev,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}`
     )
     .then(({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
       return fs.writeFile(
-        `geojson/${layer.name}-${i}.geojson`,
+        path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
         JSON.stringify(omit(data, 'exceededTransferLimit'))
       );
     });
@@ -40,7 +41,7 @@ const loadLayer = async layer => {
   );
 
   const step = layer.name === 'GroundCoverPoly' ? 5 : STEP;
-  return range(0, Math.min(count || 1, step), step).reduce(async (previousPromise, next) => {
+  return range(0, count || 1, step).reduce(async (previousPromise, next) => {
     await previousPromise;
     return loadFeatures(next, count, step, layer);
   }, Promise.resolve());
@@ -78,7 +79,7 @@ axios
     s3.registerProtocols(tilelive);
     MBTiles.registerProtocols(tilelive);
 
-    const sourceUri = 'mbtiles://rio.mbtiles';
+    const sourceUri = `mbtiles://${path.join(__dirname, 'rio.mbtiles')}`;
     const sinkUri = process.env.AWS_BUCKET;
 
     const src = await loadAsync(sourceUri);
