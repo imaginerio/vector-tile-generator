@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const { exec } = require('child_process');
+const { promisify } = require('util');
 const axios = require('axios');
 const ora = require('ora');
 const { range, omit } = require('lodash');
@@ -9,7 +10,11 @@ const tilelive = require('@mapbox/tilelive');
 const MBTiles = require('@mapbox/mbtiles');
 const s3 = require('@mapbox/tilelive-s3');
 
+const loadAsync = promisify(tilelive.load);
+const copyAsync = promisify(tilelive.copy);
+
 const STEP = 200;
+const VECTOR_LAYERS = [];
 
 const spinner = ora('Loading layer info').start();
 
@@ -53,9 +58,34 @@ axios
         return loadLayer(layer)
           .then(() =>
             mapshaper.runCommands(
-              `-i geojson/${layer.name}*.geojson combine-files -merge-layers -o geojson/final/${layer.name}.geojson force format=geojson`
+              `-i geojson/${layer.name}*.geojson combine-files -merge-layers -o geojson/final/${layer.name}.geojson force format=geojson id-field=objectid`
             )
           )
-          .then(() => spinner.succeed(`${layer.name} loaded`));
+          .then(() => {
+            VECTOR_LAYERS.push(`geojson/final/${layer.name}.geojson`);
+            return spinner.succeed(`${layer.name} loaded`);
+          });
       }, Promise.resolve());
+  })
+  .then(async () => {
+    tippecanoe(VECTOR_LAYERS, {
+      f: true,
+      Z: 9,
+      z: 15,
+      r1: true,
+      o: 'rio.mbtiles',
+    });
+    s3.registerProtocols(tilelive);
+    MBTiles.registerProtocols(tilelive);
+
+    const sourceUri = 'mbtiles://rio.mbtiles';
+    const sinkUri = process.env.AWS_BUCKET;
+
+    const src = await loadAsync(sourceUri);
+    const dest = await loadAsync(sinkUri);
+    const options = {
+      type: 'list',
+      listScheme: src.createZXYStream(),
+    };
+    return copyAsync(src, dest, options);
   });
