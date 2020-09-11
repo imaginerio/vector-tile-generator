@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+const { argv } = require('yargs');
 const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
@@ -15,9 +17,8 @@ const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
 
 const STEP = 200;
-const VECTOR_LAYERS = [];
-
-const spinner = ora('Loading layer info').start();
+let VECTOR_LAYERS = [];
+const spinner = ora('Generating vector tiles\n').start();
 
 const loadFeatures = async (i, count, step, layer) =>
   axios
@@ -47,46 +48,63 @@ const loadLayer = async layer => {
   }, Promise.resolve());
 };
 
-exec('rm geojson/*.geojson && rm geojson/final/*.geojson');
-axios
-  .get('https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/layers?f=json')
-  .then(({ data: { layers } }) => {
-    spinner.succeed(`${layers.length} layers loaded`);
-    return layers
-      .filter(l => !l.name.match(/^ir_rio/))
-      .reduce(async (previousPromise, layer) => {
-        await previousPromise;
-        return loadLayer(layer)
-          .then(() =>
-            mapshaper.runCommands(
-              `-i geojson/${layer.name}*.geojson combine-files -merge-layers -o geojson/final/${layer.name}.geojson force format=geojson id-field=objectid`
-            )
-          )
-          .then(() => {
-            VECTOR_LAYERS.push(`geojson/final/${layer.name}.geojson`);
-            return spinner.succeed(`${layer.name} loaded`);
-          });
-      }, Promise.resolve());
-  })
-  .then(async () => {
-    tippecanoe(VECTOR_LAYERS, {
-      f: true,
-      Z: 9,
-      z: 15,
-      r1: true,
-      o: 'rio.mbtiles',
-    });
-    s3.registerProtocols(tilelive);
-    MBTiles.registerProtocols(tilelive);
-
-    const sourceUri = `mbtiles://${path.join(__dirname, 'rio.mbtiles')}`;
-    const sinkUri = process.env.AWS_BUCKET;
-
-    const src = await loadAsync(sourceUri);
-    const dest = await loadAsync(sinkUri);
-    const options = {
-      type: 'list',
-      listScheme: src.createZXYStream(),
-    };
-    return copyAsync(src, dest, options);
+const upload = async () => {
+  tippecanoe(VECTOR_LAYERS, {
+    f: true,
+    Z: 9,
+    z: 15,
+    r1: true,
+    o: 'rio.mbtiles',
   });
+
+  spinner.start('Uploading vector tiles to S3');
+  s3.registerProtocols(tilelive);
+  MBTiles.registerProtocols(tilelive);
+
+  const sourceUri = `mbtiles://${path.join(__dirname, 'rio.mbtiles')}`;
+  const sinkUri = process.env.AWS_BUCKET;
+
+  const src = await loadAsync(sourceUri);
+  const dest = await loadAsync(sinkUri);
+  const options = {
+    type: 'list',
+    listScheme: src.createZXYStream(),
+  };
+  return copyAsync(src, dest, options).then(() => spinner.succeed());
+};
+
+const main = () => {
+  exec('rm geojson/*.geojson && rm geojson/final/*.geojson');
+  spinner.text = 'Loading layer info';
+  axios
+    .get('https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/layers?f=json')
+    .then(({ data: { layers } }) => {
+      spinner.succeed(`${layers.length} layers loaded`);
+      return layers
+        .filter(l => !l.name.match(/^ir_rio/))
+        .reduce(async (previousPromise, layer) => {
+          await previousPromise;
+          return loadLayer(layer)
+            .then(() =>
+              mapshaper.runCommands(
+                `-i geojson/${layer.name}*.geojson combine-files -merge-layers
+                -o geojson/final/${layer.name.toLowerCase()}.geojson force format=geojson id-field=objectid`
+              )
+            )
+            .then(() => {
+              VECTOR_LAYERS.push(`geojson/final/${layer.name.toLowerCase()}.geojson`);
+              return spinner.succeed(`${layer.name} loaded`);
+            });
+        }, Promise.resolve());
+    })
+    .then(upload);
+};
+
+if (argv.upload) {
+  fs.readdir('geojson/final').then(files => {
+    VECTOR_LAYERS = files.map(f => `geojson/final/${f}`);
+    return upload();
+  });
+} else {
+  main();
+}
