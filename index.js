@@ -16,32 +16,43 @@ const s3 = require('@mapbox/tilelive-s3');
 const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
 
-const STEP = 200;
+const STEP = 100;
 let VECTOR_LAYERS = [];
 const spinner = ora('Generating vector tiles\n').start();
 
-const loadFeatures = async (i, count, step, layer) =>
-  axios
+const loadFeatures = async (i, count, step, layer) => {
+  return axios
     .get(
-      `https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=objectid,nameshort,nameabbrev,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}`
+      `https://arcgis.rice.edu/arcgis/rest/services/pilotPlan_Data/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}`
     )
     .then(({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
+      const geojson = omit(data, 'exceededTransferLimit');
+      geojson.features = geojson.features.map(f => ({
+        ...f,
+        properties: {
+          Name: f.properties.name,
+          FirstYear: f.properties.firstyear,
+          LastYear: f.properties.firstyear,
+          SubType: f.properties.subtype,
+        }
+      }))
       return fs.writeFile(
         path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
-        JSON.stringify(omit(data, 'exceededTransferLimit'))
+        JSON.stringify(geojson)
       );
-    });
+    }).catch(err => console.log(err));
+  }
 
 const loadLayer = async layer => {
   spinner.start(`${layer.name}: Loading features`);
   const {
     data: { count },
   } = await axios.get(
-    `https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true`
+    `https://arcgis.rice.edu/arcgis/rest/services/pilotPlan_Data/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true`
   );
 
-  const step = layer.name === 'GroundCoverPoly' ? 5 : STEP;
+  const step = STEP;
   return range(0, count || 1, step).reduce(async (previousPromise, next) => {
     await previousPromise;
     return loadFeatures(next, count, step, layer);
@@ -61,7 +72,7 @@ const upload = async () => {
   s3.registerProtocols(tilelive);
   MBTiles.registerProtocols(tilelive);
 
-  const sourceUri = `mbtiles://${path.join(__dirname, 'rio.mbtiles')}`;
+  const sourceUri = `mbtiles://${path.join(__dirname, 'tiles.mbtiles')}`;
   const sinkUri = process.env.AWS_BUCKET;
 
   const src = await loadAsync(sourceUri);
