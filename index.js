@@ -6,7 +6,7 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const axios = require('axios');
 const ora = require('ora');
-const { range, omit } = require('lodash');
+const { range, omit, map } = require('lodash');
 const mapshaper = require('mapshaper');
 const tippecanoe = require('tippecanoe');
 const tilelive = require('@mapbox/tilelive');
@@ -16,9 +16,42 @@ const s3 = require('@mapbox/tilelive-s3');
 const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
 
-const STEP = 100;
+const STEP = 50;
 let VECTOR_LAYERS = [];
 const spinner = ora('Generating vector tiles\n').start();
+
+const OMIT = ['ParcelsPoly'];
+const VISUAL = [
+  'AerialExtentsPoly',
+  'PlanExtentsPoly',
+  'MapExtentsPoly',
+  'BasemapExtentsPoly',
+  'ViewConesPoly',
+];
+const featureMapper = f => ({
+  ...f,
+  properties: {
+    Name: f.properties.name,
+    FirstYear: f.properties.firstyear,
+    LastYear: f.properties.firstyear,
+    SubType: f.properties.subtype,
+  },
+});
+const visualMapper = f => ({
+  ...f,
+  properties: {
+    SS_ID: f.properties.ss_id,
+    SSC_ID: f.properties.ssc_id,
+    CreditLine: f.properties.creditline,
+    Creator: f.properties.creator,
+    Date: f.properties.date,
+    Title: f.properties.title,
+    Latitude: f.properties.latitude,
+    Longitude: f.properties.longitude,
+    FirstYear: f.properties.firstyear,
+    LastYear: f.properties.lastyear,
+  },
+});
 
 const loadFeatures = async (i, count, step, layer) => {
   return axios
@@ -28,21 +61,15 @@ const loadFeatures = async (i, count, step, layer) => {
     .then(({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
       const geojson = omit(data, 'exceededTransferLimit');
-      geojson.features = geojson.features.map(f => ({
-        ...f,
-        properties: {
-          Name: f.properties.name,
-          FirstYear: f.properties.firstyear,
-          LastYear: f.properties.firstyear,
-          SubType: f.properties.subtype,
-        }
-      }))
+      const mapper = VISUAL.includes(layer.name) ? visualMapper : featureMapper;
+      geojson.features = geojson.features.map(mapper);
       return fs.writeFile(
         path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
         JSON.stringify(geojson)
       );
-    }).catch(err => console.log(err));
-  }
+    })
+    .catch(err => console.log(err));
+};
 
 const loadLayer = async layer => {
   spinner.start(`${layer.name}: Loading features`);
@@ -65,7 +92,7 @@ const upload = async () => {
     Z: 9,
     z: 15,
     r1: true,
-    o: 'rio.mbtiles',
+    o: 'tiles.mbtiles',
   });
 
   spinner.start('Uploading vector tiles to S3');
@@ -88,11 +115,11 @@ const main = () => {
   exec('rm geojson/*.geojson && rm geojson/final/*.geojson');
   spinner.text = 'Loading layer info';
   axios
-    .get('https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/layers?f=json')
+    .get('https://arcgis.rice.edu/arcgis/rest/services/pilotPlan_Data/FeatureServer/layers?f=json')
     .then(({ data: { layers } }) => {
       spinner.succeed(`${layers.length} layers loaded`);
       return layers
-        .filter(l => !l.name.match(/^ir_rio/))
+        .filter(l => !OMIT.includes(l.name))
         .reduce(async (previousPromise, layer) => {
           await previousPromise;
           return loadLayer(layer)
@@ -105,7 +132,8 @@ const main = () => {
             .then(() => {
               VECTOR_LAYERS.push(`geojson/final/${layer.name.toLowerCase()}.geojson`);
               return spinner.succeed(`${layer.name} loaded`);
-            });
+            })
+            .catch(err => console.log(err));
         }, Promise.resolve());
     })
     .then(upload);
