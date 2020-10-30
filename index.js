@@ -1,17 +1,18 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 const { argv } = require('yargs');
 const fs = require('fs').promises;
 const path = require('path');
-const { exec } = require('child_process');
 const { promisify } = require('util');
 const axios = require('axios');
 const ora = require('ora');
-const { range, omit, map } = require('lodash');
+const { range, omit } = require('lodash');
 const mapshaper = require('mapshaper');
-const tippecanoe = require('tippecanoe');
 const tilelive = require('@mapbox/tilelive');
 const MBTiles = require('@mapbox/mbtiles');
 const s3 = require('@mapbox/tilelive-s3');
+
+const exec = promisify(require('child_process').exec);
 
 const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
@@ -87,13 +88,11 @@ const loadLayer = async layer => {
 };
 
 const upload = async () => {
-  tippecanoe(VECTOR_LAYERS, {
-    f: true,
-    Z: 9,
-    z: 15,
-    r1: true,
-    o: 'tiles.mbtiles',
-  });
+  spinner.start('Creating MBTiles');
+  const { stdout, stderr } = await exec(await fs.readFile('tiles.sh', 'utf-8'));
+  console.log('stdout:', stdout);
+  console.log('stderr:', stderr);
+  spinner.succeed();
 
   spinner.start('Uploading vector tiles to S3');
   s3.registerProtocols(tilelive);
@@ -111,8 +110,9 @@ const upload = async () => {
   return copyAsync(src, dest, options).then(() => spinner.succeed());
 };
 
-const main = () => {
-  exec('rm geojson/*.geojson && rm geojson/final/*.geojson');
+const main = async () => {
+  await exec('rm geojson/*.geojson && rm geojson/final/*.geojson');
+  await exec('rm *.mbtiles');
   spinner.text = 'Loading layer info';
   axios
     .get('https://arcgis.rice.edu/arcgis/rest/services/pilotPlan_Data/FeatureServer/layers?f=json')

@@ -15,6 +15,8 @@ RUN git clone https://github.com/mapbox/tippecanoe.git \
   && make \
   && make install
 
+RUN npm install -g mapshaper
+
 COPY index.js index.js
 COPY package.json package.json
 
