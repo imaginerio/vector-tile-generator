@@ -15,7 +15,7 @@
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [],
+	"extensions": [ "dbaeumer.vscode-eslint" ],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
@@ -24,7 +24,9 @@
 	// "postCreateCommand": "apt-get update && apt-get install -y curl",
 
 	// Uncomment when using a ptrace-based debugger like C++, Go, and Rust
-	"runArgs": ["--env-file",".env"],
+	"runArgs": [
+		"--env-file", "${localWorkspaceFolder}/.env"
+	],
 
 	// Uncomment to use the Docker CLI from inside the container. See https://aka.ms/vscode-remote/samples/docker-from-docker.
 	"mounts": [
