@@ -24,6 +24,7 @@
     "lodash": "^4.17.20",
     "mapshaper": "^0.5.20",
     "ora": "^5.1.0",
+    "shelljs": "^0.8.4",
     "tippecanoe": "^0.6.0",
     "yargs": "^16.0.3"
   },

@@ -4,6 +4,7 @@ const { argv } = require('yargs');
 const fs = require('fs').promises;
 const path = require('path');
 const { promisify } = require('util');
+const shell = require('shelljs');
 const axios = require('axios');
 const ora = require('ora');
 const { range, omit } = require('lodash');
@@ -11,8 +12,6 @@ const mapshaper = require('mapshaper');
 const tilelive = require('@mapbox/tilelive');
 const MBTiles = require('@mapbox/mbtiles');
 const s3 = require('@mapbox/tilelive-s3');
-
-const exec = promisify(require('child_process').exec);
 
 const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
@@ -62,12 +61,15 @@ const loadFeatures = async (i, count, step, layer) => {
     .then(({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
       const geojson = omit(data, 'exceededTransferLimit');
-      const mapper = VISUAL.includes(layer.name) ? visualMapper : featureMapper;
-      geojson.features = geojson.features.map(mapper);
-      return fs.writeFile(
-        path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
-        JSON.stringify(geojson)
-      );
+      if (geojson.features) {
+        const mapper = VISUAL.includes(layer.name) ? visualMapper : featureMapper;
+        geojson.features = geojson.features.map(mapper);
+        return fs.writeFile(
+          path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
+          JSON.stringify(geojson)
+        );
+      }
+      return Promise.resolve();
     })
     .catch(err => console.log(err));
 };
@@ -89,9 +91,7 @@ const loadLayer = async layer => {
 
 const upload = async () => {
   spinner.start('Creating MBTiles');
-  const { stdout, stderr } = await exec(await fs.readFile('tiles.sh', 'utf-8'));
-  console.log('stdout:', stdout);
-  console.log('stderr:', stderr);
+  shell.exec('./tiles.sh');
   spinner.succeed();
 
   spinner.start('Uploading vector tiles to S3');
@@ -107,12 +107,11 @@ const upload = async () => {
     type: 'list',
     listScheme: src.createZXYStream(),
   };
-  return copyAsync(src, dest, options).then(() => spinner.succeed());
+  await copyAsync(src, dest, options);
+  spinner.succeed();
 };
 
 const main = async () => {
-  await exec('rm geojson/*.geojson && rm geojson/final/*.geojson');
-  await exec('rm *.mbtiles');
   spinner.text = 'Loading layer info';
   axios
     .get('https://arcgis.rice.edu/arcgis/rest/services/pilotPlan_Data/FeatureServer/layers?f=json')
