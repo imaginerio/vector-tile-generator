@@ -1,8 +1,11 @@
 #!/usr/bin/env node
+/* eslint-disable camelcase */
 /* eslint-disable no-console */
+require('dotenv').config();
 const { argv } = require('yargs');
 const fs = require('fs').promises;
 const path = require('path');
+const https = require('https');
 const { promisify } = require('util');
 const shell = require('shelljs');
 const axios = require('axios');
@@ -53,10 +56,13 @@ const visualMapper = f => ({
   },
 });
 
+let access_token;
+
 const loadFeatures = async (i, count, step, layer) => {
   return axios
     .get(
-      `https://arcgis.rice.edu/arcgis/rest/services/pilotPlan_Data/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}`
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/pilotplan_RoadsLine_auth/FeatureServer/0/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}&code=${access_token}`,
+      { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
@@ -138,11 +144,43 @@ const main = async () => {
     .then(upload);
 };
 
+const authenticate = () => {
+  const { CLIENT_ID, USERNAME, PASSWORD } = process.env;
+  const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+  return axios
+    .get(
+      `https://enterprise.spatialstudieslab.org/portal/sharing/rest/oauth2/authorize/?client_id=${CLIENT_ID}&response_type=code&expiration=3600&redirect_uri=urn:ietf:wg:oauth:2.0:oob`,
+      { httpsAgent }
+    )
+    .then(({ data }) => {
+      const oauth = data.replace(/^.*"oauth_state":"(.*?)".*$/gs, '$1');
+      return axios
+        .post(
+          `https://enterprise.spatialstudieslab.org/portal/sharing/oauth2/signin?oauth_state=${oauth}&authorize=true&username=${USERNAME}&password=${PASSWORD}`,
+          {},
+          { httpsAgent }
+        )
+        .then(res => {
+          const code = res.data.replace(/^.*id="code" value="(.*?)".*$/gs, '$1');
+          return axios
+            .post(
+              `https://enterprise.spatialstudieslab.org/portal/sharing/oauth2/token?client_id=${CLIENT_ID}&code=${code}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&grant_type=authorization_code`,
+              {},
+              { httpsAgent }
+            )
+            .then(res2 => {
+              ({ access_token } = res2.data.access_token);
+              return Promise.resolve();
+            });
+        });
+    });
+};
+
 if (argv.upload) {
   fs.readdir('geojson/final').then(files => {
     VECTOR_LAYERS = files.map(f => `geojson/final/${f}`);
     return upload();
   });
 } else {
-  main();
+  authenticate().then(() => main());
 }
