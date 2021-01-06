@@ -3,7 +3,7 @@
 /* eslint-disable no-console */
 require('dotenv').config();
 const { argv } = require('yargs');
-const fs = require('fs').promises;
+const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const { promisify } = require('util');
@@ -19,7 +19,7 @@ const s3 = require('@mapbox/tilelive-s3');
 const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
 
-const STEP = 50;
+const STEP = 100;
 let VECTOR_LAYERS = [];
 const spinner = ora('Generating vector tiles\n').start();
 
@@ -36,7 +36,7 @@ const featureMapper = f => ({
   properties: {
     Name: f.properties.name,
     FirstYear: f.properties.firstyear,
-    LastYear: f.properties.firstyear,
+    LastYear: f.properties.lastyear,
     SubType: f.properties.subtype,
   },
 });
@@ -61,21 +61,24 @@ let access_token;
 const loadFeatures = async (i, count, step, layer) => {
   return axios
     .get(
-      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/pilotplan_RoadsLine_auth/FeatureServer/0/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}&code=${access_token}`,
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/pilotPlan/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
-    .then(({ data }) => {
+    .then(async ({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
       const geojson = omit(data, 'exceededTransferLimit');
       if (geojson.features) {
         const mapper = VISUAL.includes(layer.name) ? visualMapper : featureMapper;
         geojson.features = geojson.features.map(mapper);
-        return fs.writeFile(
+        return fs.promises.writeFile(
           path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
           JSON.stringify(geojson)
         );
       }
-      return Promise.resolve();
+      spinner.fail('An error occurred. Retrying');
+      // eslint-disable-next-line no-use-before-define
+      authenticate().then(() => main());
+      return Promise.reject();
     })
     .catch(err => console.log(err));
 };
@@ -85,12 +88,15 @@ const loadLayer = async layer => {
   const {
     data: { count },
   } = await axios.get(
-    `https://arcgis.rice.edu/arcgis/rest/services/pilotPlan_Data/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true`
+    `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/pilotPlan/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true&token=${access_token}`,
+    { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
 
   const step = STEP;
   return range(0, count || 1, step).reduce(async (previousPromise, next) => {
     await previousPromise;
+    const exists = fs.existsSync(path.join(__dirname, 'geojson/', `${layer.name}-${next}.geojson`));
+    if (exists) return Promise.resolve();
     return loadFeatures(next, count, step, layer);
   }, Promise.resolve());
 };
@@ -120,7 +126,10 @@ const upload = async () => {
 const main = async () => {
   spinner.text = 'Loading layer info';
   axios
-    .get('https://arcgis.rice.edu/arcgis/rest/services/pilotPlan_Data/FeatureServer/layers?f=json')
+    .get(
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/pilotPlan/FeatureServer/layers?f=json&token=${access_token}`,
+      { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
+    )
     .then(({ data: { layers } }) => {
       spinner.succeed(`${layers.length} layers loaded`);
       return layers
@@ -131,7 +140,7 @@ const main = async () => {
             .then(() =>
               mapshaper.runCommands(
                 `-i geojson/${layer.name}*.geojson combine-files -merge-layers
-                -o geojson/final/${layer.name.toLowerCase()}.geojson force format=geojson id-field=objectid`
+                -o geojson/final/${layer.name}.json force format=geojson id-field=objectid`
               )
             )
             .then(() => {
@@ -169,7 +178,7 @@ const authenticate = () => {
               { httpsAgent }
             )
             .then(res2 => {
-              ({ access_token } = res2.data.access_token);
+              ({ access_token } = res2.data);
               return Promise.resolve();
             });
         });
@@ -177,7 +186,7 @@ const authenticate = () => {
 };
 
 if (argv.upload) {
-  fs.readdir('geojson/final').then(files => {
+  fs.promises.readdir('geojson/final').then(files => {
     VECTOR_LAYERS = files.map(f => `geojson/final/${f}`);
     return upload();
   });
