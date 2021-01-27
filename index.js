@@ -28,7 +28,7 @@ let access_token;
 const loadFeatures = async (i, count, step, layer) =>
   axios
     .get(
-      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/imagineRio/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=objectid,nameshort,nameabbrev,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/imagineRio/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=objectid,nameshort,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(({ data }) => {
