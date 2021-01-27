@@ -52,7 +52,7 @@ const upload = async () => {
   tippecanoe(VECTOR_LAYERS, {
     f: true,
     Z: 9,
-    z: 15,
+    z: 17,
     r1: true,
     o: 'rio.mbtiles',
   });
