@@ -19,57 +19,23 @@ const s3 = require('@mapbox/tilelive-s3');
 const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
 
-const STEP = 100;
+const STEP = 1000;
 let VECTOR_LAYERS = [];
+const OMIT = [];
 const spinner = ora('Generating vector tiles\n').start();
-
-const OMIT = ['ParcelsPoly'];
-const VISUAL = [
-  'AerialExtentsPoly',
-  'PlanExtentsPoly',
-  'MapExtentsPoly',
-  'BasemapExtentsPoly',
-  'ViewConesPoly',
-];
-const featureMapper = f => ({
-  ...f,
-  properties: {
-    Name: f.properties.name,
-    FirstYear: f.properties.firstyear,
-    LastYear: f.properties.lastyear,
-    SubType: f.properties.subtype,
-  },
-});
-const visualMapper = f => ({
-  ...f,
-  properties: {
-    SS_ID: f.properties.ss_id,
-    SSC_ID: f.properties.ssc_id,
-    CreditLine: f.properties.creditline,
-    Creator: f.properties.creator,
-    Date: f.properties.date,
-    Title: f.properties.title,
-    Latitude: f.properties.latitude,
-    Longitude: f.properties.longitude,
-    FirstYear: f.properties.firstyear,
-    LastYear: f.properties.lastyear,
-  },
-});
 
 let access_token;
 
 const loadFeatures = async (i, count, step, layer) => {
   return axios
     .get(
-      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/pilotPlan/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/HighwaysWaterways_Data/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(async ({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
       const geojson = omit(data, 'exceededTransferLimit');
       if (geojson.features) {
-        const mapper = VISUAL.includes(layer.name) ? visualMapper : featureMapper;
-        geojson.features = geojson.features.map(mapper);
         return fs.promises.writeFile(
           path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
           JSON.stringify(geojson)
@@ -88,7 +54,7 @@ const loadLayer = async layer => {
   const {
     data: { count },
   } = await axios.get(
-    `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/pilotPlan/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true&token=${access_token}`,
+    `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/HighwaysWaterways_Data/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true&token=${access_token}`,
     { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
 
@@ -127,7 +93,7 @@ const main = async () => {
   spinner.text = 'Loading layer info';
   axios
     .get(
-      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/pilotPlan/FeatureServer/layers?f=json&token=${access_token}`,
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/HighwaysWaterways_Data/FeatureServer/layers?f=json&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(({ data: { layers } }) => {
