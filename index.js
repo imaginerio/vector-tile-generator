@@ -1,7 +1,10 @@
 #!/usr/bin/env node
+/* eslint-disable camelcase */
+require('dotenv').config();
 const { argv } = require('yargs');
 const fs = require('fs').promises;
 const path = require('path');
+const https = require('https');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const axios = require('axios');
@@ -20,10 +23,13 @@ const STEP = 200;
 let VECTOR_LAYERS = [];
 const spinner = ora('Generating vector tiles\n').start();
 
+let access_token;
+
 const loadFeatures = async (i, count, step, layer) =>
   axios
     .get(
-      `https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=objectid,nameshort,nameabbrev,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}`
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/imagineRio_Data/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=objectid,nameshort,nameabbrev,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
+      { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
@@ -38,7 +44,8 @@ const loadLayer = async layer => {
   const {
     data: { count },
   } = await axios.get(
-    `https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true`
+    `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/imagineRio_Data/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true&token=${access_token}`,
+    { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
 
   const step = layer.name === 'GroundCoverPoly' ? 5 : STEP;
@@ -77,7 +84,10 @@ const main = () => {
   exec('rm geojson/*.geojson && rm geojson/final/*.geojson');
   spinner.text = 'Loading layer info';
   axios
-    .get('https://arcgis.rice.edu/arcgis/rest/services/imagineRio_Data/FeatureServer/layers?f=json')
+    .get(
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/imagineRio_Data/FeatureServer/layers?f=json&token=${access_token}`,
+      { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
+    )
     .then(({ data: { layers } }) => {
       spinner.succeed(`${layers.length} layers loaded`);
       return layers
@@ -100,11 +110,43 @@ const main = () => {
     .then(upload);
 };
 
+const authenticate = () => {
+  const { CLIENT_ID, USERNAME, PASSWORD } = process.env;
+  const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+  return axios
+    .get(
+      `https://enterprise.spatialstudieslab.org/portal/sharing/rest/oauth2/authorize/?client_id=${CLIENT_ID}&response_type=code&expiration=3600&redirect_uri=urn:ietf:wg:oauth:2.0:oob`,
+      { httpsAgent }
+    )
+    .then(({ data }) => {
+      const oauth = data.replace(/^.*"oauth_state":"(.*?)".*$/gs, '$1');
+      return axios
+        .post(
+          `https://enterprise.spatialstudieslab.org/portal/sharing/oauth2/signin?oauth_state=${oauth}&authorize=true&username=${USERNAME}&password=${PASSWORD}`,
+          {},
+          { httpsAgent }
+        )
+        .then(res => {
+          const code = res.data.replace(/^.*id="code" value="(.*?)".*$/gs, '$1');
+          return axios
+            .post(
+              `https://enterprise.spatialstudieslab.org/portal/sharing/oauth2/token?client_id=${CLIENT_ID}&code=${code}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&grant_type=authorization_code`,
+              {},
+              { httpsAgent }
+            )
+            .then(res2 => {
+              ({ access_token } = res2.data);
+              return Promise.resolve();
+            });
+        });
+    });
+};
+
 if (argv.upload) {
   fs.readdir('geojson/final').then(files => {
     VECTOR_LAYERS = files.map(f => `geojson/final/${f}`);
     return upload();
   });
 } else {
-  main();
+  authenticate().then(() => main());
 }
