@@ -21,6 +21,13 @@ const copyAsync = promisify(tilelive.copy);
 
 const STEP = 200;
 let VECTOR_LAYERS = [];
+const OMIT = [
+  'ViewConesPoly',
+  'SurveyExtentsPoly',
+  'AerialExtentsPoly',
+  'PlanExtentsPoly',
+  'MapExtentsPoly',
+];
 const spinner = ora('Generating vector tiles\n').start();
 
 let access_token;
@@ -91,7 +98,7 @@ const main = () => {
     .then(({ data: { layers } }) => {
       spinner.succeed(`${layers.length} layers loaded`);
       return layers
-        .filter(l => !l.name.match(/^ir_rio/))
+        .filter(l => !OMIT.includes(l.name))
         .reduce(async (previousPromise, layer) => {
           await previousPromise;
           return loadLayer(layer)
