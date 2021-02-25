@@ -21,7 +21,7 @@ const copyAsync = promisify(tilelive.copy);
 
 const STEP = 1000;
 let VECTOR_LAYERS = [];
-const OMIT = ['GroundCoverPoly', 'FloodPoly', 'SeaLevelRisePoly', 'AerialExtentsPoly'];
+const OMIT = [];
 const spinner = ora('Generating vector tiles\n').start();
 
 let access_token;
