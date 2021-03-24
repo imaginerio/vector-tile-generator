@@ -116,6 +116,11 @@ const main = async () => {
             .catch(err => console.log(err));
         }, Promise.resolve());
     })
+    .then(() =>
+      mapshaper.runCommands(
+        `-i geojson/final/RoadsLine.json -each "namealt=namealt.replace(/\\D/gm, '')" -o geojson/final/RoadsLine.json force`
+      )
+    )
     .then(upload);
 };
 

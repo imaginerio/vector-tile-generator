@@ -1,10 +1,11 @@
 # No local roads buildings, or parcels
 tippecanoe -Z 8 -z 11 -pf -pk -ab -ai -f -o allzooms.mbtiles \
-  -j '{ "RoadsLine": ["in", "type", "Highway", "Primary", "Secondary"] }' \
+  -j '{ "RoadsLine": ["in", "type", "Interstate", "Highway", "Primary", "Secondary"] }' \
   -y type \
   -y name \
   -y firstyear \
   -y lastyear \
+  -y namealt \
   geojson/final/BoundariesPoly.json \
   geojson/final/GroundCoverPoly.json \
   geojson/final/HidrographyLine.json \
@@ -20,6 +21,7 @@ tippecanoe -Z 12 -z 12 -pf -pk -ab -ai -f -o LocalRoads.mbtiles \
   -y name \
   -y firstyear \
   -y lastyear \
+  -y namealt \
   geojson/final/BoundariesPoly.json \
   geojson/final/GroundCoverPoly.json \
   geojson/final/HidrographyLine.json \
@@ -35,6 +37,7 @@ tippecanoe -Z 13 -z 16 -pf -pk -ab -ai -f -o BuildingsPoly.mbtiles \
   -y name \
   -y firstyear \
   -y lastyear \
+  -y namealt \
   geojson/final/BoundariesPoly.json \
   geojson/final/BuildingsPoly.json \
   geojson/final/GroundCoverPoly.json \
