@@ -21,7 +21,7 @@ const copyAsync = promisify(tilelive.copy);
 
 const STEP = 1000;
 let VECTOR_LAYERS = [];
-const OMIT = [];
+const OMIT = JSON.parse(process.env.OMIT);
 const spinner = ora('Generating vector tiles\n').start();
 
 let access_token;
@@ -118,7 +118,7 @@ const main = async () => {
     })
     .then(() =>
       mapshaper.runCommands(
-        `-i geojson/final/RoadsLine.json -each "namealt=namealt.replace(/\\D/gm, '')" -o geojson/final/RoadsLine.json force`
+        `-i geojson/final/RoadsLine.json -each "namealt = namealt ? namealt.replace(/\\D/gm, '') : null; namealt = namealt === '' ? null : namealt" -o geojson/final/RoadsLine.json force`
       )
     )
     .then(upload);
