@@ -2,10 +2,9 @@
 /* eslint-disable camelcase */
 require('dotenv').config();
 const { argv } = require('yargs');
-const fs = require('fs').promises;
+const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const { exec } = require('child_process');
 const { promisify } = require('util');
 const axios = require('axios');
 const ora = require('ora');
@@ -40,7 +39,7 @@ const loadFeatures = async (i, count, step, layer) =>
     )
     .then(({ data }) => {
       spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
-      return fs.writeFile(
+      return fs.promises.writeFile(
         path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
         JSON.stringify(omit(data, 'exceededTransferLimit'))
       );
@@ -58,6 +57,8 @@ const loadLayer = async layer => {
   const step = layer.name === 'GroundCoverPoly' ? 5 : STEP;
   return range(0, count || 1, step).reduce(async (previousPromise, next) => {
     await previousPromise;
+    const exists = fs.existsSync(path.join(__dirname, 'geojson/', `${layer.name}-${next}.geojson`));
+    if (exists) return Promise.resolve();
     return loadFeatures(next, count, step, layer);
   }, Promise.resolve());
 };
@@ -88,7 +89,6 @@ const upload = async () => {
 };
 
 const main = () => {
-  exec('rm geojson/*.geojson && rm geojson/final/*.geojson');
   spinner.text = 'Loading layer info';
   axios
     .get(
@@ -150,10 +150,9 @@ const authenticate = () => {
 };
 
 if (argv.upload) {
-  fs.readdir('geojson/final').then(files => {
-    VECTOR_LAYERS = files.map(f => `geojson/final/${f}`);
-    return upload();
-  });
+  const files = fs.readdirSync('geojson/final');
+  VECTOR_LAYERS = files.map(f => `geojson/final/${f}`);
+  upload();
 } else {
   authenticate().then(() => main());
 }
