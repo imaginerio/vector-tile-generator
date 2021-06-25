@@ -16,6 +16,7 @@ RUN git clone https://github.com/mapbox/tippecanoe.git \
   && make install
 
 RUN npm install -g mapshaper
+COPY package.json package.json
 
 COPY package.json package.json
 RUN npm install
@@ -24,4 +25,4 @@ COPY index.js index.js
 COPY tiles.sh tiles.sh
 RUN mkdir -p geojson/final
 
-ENTRYPOINT [ "node", "index.js" ]
+ENTRYPOINT [ "node", "index" ]
