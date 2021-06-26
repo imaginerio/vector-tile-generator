@@ -15,9 +15,9 @@ RUN git clone https://github.com/mapbox/tippecanoe.git \
   && make \
   && make install
 
-COPY index.js index.js
 COPY package.json package.json
-
 RUN npm install
+
+COPY . .
 
 ENTRYPOINT [ "node", "index" ]
