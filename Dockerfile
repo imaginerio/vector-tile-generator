@@ -21,8 +21,7 @@ COPY package.json package.json
 COPY package.json package.json
 RUN npm install
 
-COPY index.js index.js
-COPY tiles.sh tiles.sh
+COPY . .
 RUN mkdir -p geojson/final
 
 ENTRYPOINT [ "node", "index" ]
