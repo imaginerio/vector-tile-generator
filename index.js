@@ -54,7 +54,7 @@ const loadLayer = async layer => {
     { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
 
-  const step = layer.name === 'GroundCoverPoly' ? 5 : STEP;
+  const step = STEP;
   return range(0, count || 1, step).reduce(async (previousPromise, next) => {
     await previousPromise;
     const exists = fs.existsSync(path.join(__dirname, 'geojson/', `${layer.name}-${next}.geojson`));
