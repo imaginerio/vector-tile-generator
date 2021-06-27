@@ -42,7 +42,7 @@ services:
     branch: highways
     envVars:
       - key: STEP
-        value: 500
+        value: 200
       - key: AWS_BUCKET
         value: s3://highwaystiles/base/{z}/{x}/{y}?timeout=10000
       - key: OMIT
