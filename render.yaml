@@ -41,6 +41,8 @@ services:
     repo: https://github.com/imaginerio/vector-tile-generator.git
     branch: highways
     envVars:
+      - key: STEP
+        value: 500
       - key: AWS_BUCKET
         value: s3://highwaystiles/base/{z}/{x}/{y}?timeout=10000
       - key: OMIT

@@ -19,7 +19,7 @@ const s3 = require('@mapbox/tilelive-s3');
 const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
 
-const STEP = 1000;
+const STEP = process.env.STEP || 1000;
 let VECTOR_LAYERS = [];
 const OMIT = JSON.parse(process.env.OMIT);
 const spinner = ora('Generating vector tiles\n').start();
