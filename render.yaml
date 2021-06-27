@@ -43,6 +43,8 @@ services:
     envVars:
       - key: AWS_BUCKET
         value: s3://highwaystiles/base/{z}/{x}/{y}?timeout=10000
+      - key: OMIT
+        value: '["BuildingsPoly", "PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
       - fromGroup: tile-generator
 databases:
   - name: highways
