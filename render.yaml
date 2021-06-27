@@ -37,7 +37,6 @@ services:
     name: highways-vector-tile-generator
     region: oregon
     env: docker
-    plan: pro
     schedule: "1 0 * * 6" 
     repo: https://github.com/imaginerio/vector-tile-generator.git
     branch: highways
