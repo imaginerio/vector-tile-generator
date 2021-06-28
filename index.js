@@ -10,7 +10,6 @@ const { promisify } = require('util');
 const shell = require('shelljs');
 const axios = require('axios');
 const { range, omit } = require('lodash');
-const mapshaper = require('mapshaper');
 const tilelive = require('@mapbox/tilelive');
 const MBTiles = require('@mapbox/mbtiles');
 const s3 = require('@mapbox/tilelive-s3');
@@ -19,7 +18,6 @@ const loadAsync = promisify(tilelive.load);
 const copyAsync = promisify(tilelive.copy);
 
 const STEP = process.env.STEP || 1000;
-let VECTOR_LAYERS = [];
 const OMIT = JSON.parse(process.env.OMIT);
 
 let access_token;
@@ -101,24 +99,12 @@ const main = async () => {
         .reduce(async (previousPromise, layer) => {
           await previousPromise;
           return loadLayer(layer)
-            .then(() =>
-              mapshaper.runCommands(
-                `-i geojson/${layer.name}*.geojson combine-files -merge-layers
-                -o geojson/final/${layer.name}.json force format=geojson id-field=objectid`
-              )
-            )
             .then(() => {
-              VECTOR_LAYERS.push(`geojson/final/${layer.name.toLowerCase()}.geojson`);
               return console.log(`${layer.name} loaded`);
             })
             .catch(err => console.log(err));
         }, Promise.resolve());
     })
-    .then(() =>
-      mapshaper.runCommands(
-        `-i geojson/final/RoadsLine.json -each "namealt = namealt ? namealt.replace(/\\D/gm, '') : null; namealt = namealt === '' ? null : namealt" -o geojson/final/RoadsLine.json force`
-      )
-    )
     .then(upload);
 };
 
@@ -155,10 +141,7 @@ const authenticate = () => {
 };
 
 if (argv.upload) {
-  fs.promises.readdir('geojson/final').then(files => {
-    VECTOR_LAYERS = files.map(f => `geojson/final/${f}`);
-    return upload();
-  });
+  upload();
 } else {
   authenticate().then(() => main());
 }
