@@ -4,7 +4,7 @@ for f in geojson/RoadsLine*.geojson
   done
 
 tippecanoe -Z 8 -z 11 -pf -pk -ab -ai -f -o RoadsLine-low.mbtiles \
-  -l RoadsLine
+  -l RoadsLine \
   -j '{ "RoadsLine": ["in", "type", "Interstate", "Highway", "Primary", "Secondary"] }' \
   -y type \
   -y name \
@@ -14,7 +14,7 @@ tippecanoe -Z 8 -z 11 -pf -pk -ab -ai -f -o RoadsLine-low.mbtiles \
   geojson/RoadsLine*.geojson
 
 tippecanoe -Z 12 -z 16 -pf -pk -ab -ai -f -o RoadsLine-high.mbtiles \
-  -l RoadsLine
+  -l RoadsLine \
   -y type \
   -y name \
   -y firstyear \
@@ -23,7 +23,7 @@ tippecanoe -Z 12 -z 16 -pf -pk -ab -ai -f -o RoadsLine-high.mbtiles \
   geojson/RoadsLine*.geojson
 
 tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o BoundariesPoly.mbtiles \
-  -l BoundariesPoly
+  -l BoundariesPoly \
   -y type \
   -y name \
   -y firstyear \
@@ -32,7 +32,7 @@ tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o BoundariesPoly.mbtiles \
   geojson/BoundariesPoly*.geojson
 
 tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o GroundCoverPoly.mbtiles \
-  -l GroundCoverPoly
+  -l GroundCoverPoly \
   -y type \
   -y name \
   -y firstyear \
@@ -41,7 +41,7 @@ tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o GroundCoverPoly.mbtiles \
   geojson/GroundCoverPoly*.geojson
 
 tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o HidrographyLine.mbtiles \
-  -l HidrographyLine
+  -l HidrographyLine \
   -y type \
   -y name \
   -y firstyear \
@@ -50,7 +50,7 @@ tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o HidrographyLine.mbtiles \
   geojson/HidrographyLine*.geojson
 
 tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o HidrographyPoly.mbtiles \
-  -l HidrographyPoly
+  -l HidrographyPoly \
   -y type \
   -y name \
   -y firstyear \
@@ -59,7 +59,7 @@ tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o HidrographyPoly.mbtiles \
   geojson/HidrographyPoly*.geojson
 
 tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o OpenSpacesPoly.mbtiles \
-  -l OpenSpacesPoly
+  -l OpenSpacesPoly \
   -y type \
   -y name \
   -y firstyear \
@@ -68,7 +68,7 @@ tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o OpenSpacesPoly.mbtiles \
   geojson/OpenSpacesPoly*.geojson
 
 tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o UtilitiesLine.mbtiles \
-  -l UtilitiesLine
+  -l UtilitiesLine \
   -y type \
   -y name \
   -y firstyear \
@@ -77,7 +77,7 @@ tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o UtilitiesLine.mbtiles \
   geojson/UtilitiesLine*.geojson
 
 tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o WaterWorksPoly.mbtiles \
-  -l WaterWorksPoly
+  -l WaterWorksPoly \
   -y type \
   -y name \
   -y firstyear \
@@ -87,13 +87,13 @@ tippecanoe -Z 8 -z 16 -pf -pk -ab -ai -f -o WaterWorksPoly.mbtiles \
 
 # Removing filter to add local roads
 tippecanoe -Z 13 -z 16 -pf -pk -ab -ai -f -o BuildingsPoly.mbtiles \
-  -l BuildingsPoly
+  -l BuildingsPoly \
   -y type \
   -y name \
   -y firstyear \
   -y lastyear \
   -y namealt \
-  geojson/final/BuildingsPoly*.json \
+  geojson/BuildingsPoly*.json \
 
 mapshaper geojson/final/ViewConesPoly.json -points x=longitude y=latitude -o geojson/final/ViewConesPoint.json
 tippecanoe -Z 9 -z 16 -pf -pk -pf -f -o ViewCones.mbtiles geojson/final/ViewConesPoint.json
