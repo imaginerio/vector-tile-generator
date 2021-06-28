@@ -82,7 +82,7 @@ const upload = async () => {
     listScheme: src.createZXYStream(),
   };
   await copyAsync(src, dest, options);
-  console.log();
+  console.log('Upload complete');
 };
 
 const main = async () => {

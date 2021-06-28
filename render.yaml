@@ -42,11 +42,31 @@ services:
     branch: highways
     envVars:
       - key: STEP
-        value: 200
+        value: 2000
       - key: AWS_BUCKET
         value: s3://highwaystiles/base/{z}/{x}/{y}?timeout=10000
       - key: OMIT
-        value: '["BuildingsPoly", "PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
+        value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
       - fromGroup: tile-generator
+  - type: cron
+    name: highways-image-generator
+    region: oregon
+    env: docker
+    schedule: "1 0 * * 6" 
+    repo: https://github.com/Spatial-Studies-Lab/image-processor.git
+    branch: main
+    envVars:
+      - key: BUCKET_TARGET
+        value: highwayswaterways-images
+      - key: BUCKET_SOURCE
+        value: connector-highwayswaterways-images
+      - key: EMAIL
+        value: dave@axismaps.com
+      - key: PROJECT
+        value: highways-waterways
+      - key: TASK
+        value: image
+      - fromGroup: tile-generator
+      - fromGroup: sendgrid
 databases:
   - name: highways
