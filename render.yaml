@@ -41,13 +41,13 @@ services:
     repo: https://github.com/imaginerio/vector-tile-generator.git
     branch: highways
     envVars:
+      - fromGroup: tile-generator
       - key: STEP
         value: 2000
       - key: AWS_BUCKET
         value: s3://highwaystiles/base/{z}/{x}/{y}?timeout=10000
       - key: OMIT
         value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
-      - fromGroup: tile-generator
   - type: cron
     name: highways-image-generator
     region: oregon
@@ -56,6 +56,8 @@ services:
     repo: https://github.com/Spatial-Studies-Lab/image-processor.git
     branch: main
     envVars:
+      - fromGroup: tile-generator
+      - fromGroup: sendgrid
       - key: BUCKET_TARGET
         value: highwayswaterways-images
       - key: BUCKET_SOURCE
@@ -66,7 +68,5 @@ services:
         value: highways-waterways
       - key: TASK
         value: image
-      - fromGroup: tile-generator
-      - fromGroup: sendgrid
 databases:
   - name: highways
