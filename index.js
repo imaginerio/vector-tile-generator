@@ -9,7 +9,6 @@ const https = require('https');
 const { promisify } = require('util');
 const shell = require('shelljs');
 const axios = require('axios');
-const ora = require('ora');
 const { range, omit } = require('lodash');
 const mapshaper = require('mapshaper');
 const tilelive = require('@mapbox/tilelive');
@@ -22,7 +21,6 @@ const copyAsync = promisify(tilelive.copy);
 const STEP = process.env.STEP || 1000;
 let VECTOR_LAYERS = [];
 const OMIT = JSON.parse(process.env.OMIT);
-const spinner = ora('Generating vector tiles\n').start();
 
 let access_token;
 
@@ -33,7 +31,7 @@ const loadFeatures = async (i, count, step, layer) => {
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(async ({ data }) => {
-      spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
+      console.log(`${layer.name}: Loading features ${i} / ${count}`);
       const geojson = omit(data, 'exceededTransferLimit');
       if (geojson.features) {
         return fs.promises.writeFile(
@@ -41,7 +39,7 @@ const loadFeatures = async (i, count, step, layer) => {
           JSON.stringify(geojson)
         );
       }
-      spinner.fail('An error occurred. Retrying');
+      console.log('An error occurred. Retrying');
       // eslint-disable-next-line no-use-before-define
       authenticate().then(() => main());
       return Promise.reject();
@@ -50,7 +48,7 @@ const loadFeatures = async (i, count, step, layer) => {
 };
 
 const loadLayer = async layer => {
-  spinner.start(`${layer.name}: Loading features`);
+  console.log(`${layer.name}: Loading features`);
   const {
     data: { count },
   } = await axios.get(
@@ -68,11 +66,11 @@ const loadLayer = async layer => {
 };
 
 const upload = async () => {
-  spinner.start('Creating MBTiles');
+  console.log('Creating MBTiles');
   shell.exec('./tiles.sh');
-  spinner.succeed();
+  console.log();
 
-  spinner.start('Uploading vector tiles to S3');
+  console.log('Uploading vector tiles to S3');
   s3.registerProtocols(tilelive);
   MBTiles.registerProtocols(tilelive);
 
@@ -86,18 +84,18 @@ const upload = async () => {
     listScheme: src.createZXYStream(),
   };
   await copyAsync(src, dest, options);
-  spinner.succeed();
+  console.log();
 };
 
 const main = async () => {
-  spinner.text = 'Loading layer info';
+  console.log('Loading layer info');
   axios
     .get(
       `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/HighwaysWaterways_Data/FeatureServer/layers?f=json&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(({ data: { layers } }) => {
-      spinner.succeed(`${layers.length} layers loaded`);
+      console.log(`${layers.length} layers loaded`);
       return layers
         .filter(l => !OMIT.includes(l.name))
         .reduce(async (previousPromise, layer) => {
@@ -111,7 +109,7 @@ const main = async () => {
             )
             .then(() => {
               VECTOR_LAYERS.push(`geojson/final/${layer.name.toLowerCase()}.geojson`);
-              return spinner.succeed(`${layer.name} loaded`);
+              return console.log(`${layer.name} loaded`);
             })
             .catch(err => console.log(err));
         }, Promise.resolve());
