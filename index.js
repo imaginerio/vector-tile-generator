@@ -66,8 +66,8 @@ const loadLayer = async layer => {
 const upload = async () => {
   tippecanoe(VECTOR_LAYERS, {
     f: true,
-    Z: 9,
-    z: 17,
+    Z: process.env.MIN_ZOOM || 9,
+    z: process.env.MAX_ZOOM || 17,
     r1: true,
     o: 'rio.mbtiles',
   });
