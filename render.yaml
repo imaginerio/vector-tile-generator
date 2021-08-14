@@ -12,6 +12,8 @@ services:
       - fromGroup: tile-generator
       - key: DATABASE
         value: HighwaysWaterways_Data
+      - key: OMIT
+        value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
       - key: DB_URL
         fromDatabase:
           name: highways
@@ -29,6 +31,8 @@ services:
       - fromGroup: highways-search
       - key: DATABASE
         value: HighwaysWaterways_Data
+      - key: OMIT
+        value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
       - key: DB_URL
         fromDatabase:
           name: highways
