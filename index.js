@@ -25,7 +25,7 @@ let access_token;
 const loadFeatures = async (i, count, step, layer) => {
   return axios
     .get(
-      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/HighwaysWaterways_Data/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=*&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(async ({ data }) => {
@@ -50,7 +50,7 @@ const loadLayer = async layer => {
   const {
     data: { count },
   } = await axios.get(
-    `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/HighwaysWaterways_Data/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true&token=${access_token}`,
+    `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true&token=${access_token}`,
     { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
 
@@ -89,7 +89,7 @@ const main = async () => {
   console.log('Loading layer info');
   axios
     .get(
-      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/HighwaysWaterways_Data/FeatureServer/layers?f=json&token=${access_token}`,
+      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/layers?f=json&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(({ data: { layers } }) => {

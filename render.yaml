@@ -50,6 +50,8 @@ services:
         value: 2000
       - key: AWS_BUCKET
         value: s3://highwaystiles/base/{z}/{x}/{y}?timeout=10000
+      - key: DATABASE
+        value: HighwaysWaterways_Data
       - key: OMIT
         value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
   - type: cron
