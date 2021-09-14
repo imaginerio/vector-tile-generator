@@ -3,6 +3,7 @@ services:
   - type: web
     name: highways-search
     repo: https://github.com/imaginerio/imaginerioSearch.git
+    branch: attribute-updates
     region: oregon
     env: node
     healthCheckPath: /layers
@@ -22,6 +23,7 @@ services:
     name: highways-database-seeder
     region: oregon
     repo: https://github.com/imaginerio/imaginerioSearch.git
+    branch: attribute-updates
     env: node
     buildCommand: yarn
     startCommand: yarn db:job
