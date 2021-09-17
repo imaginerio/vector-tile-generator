@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const { promisify } = require('util');
-const shell = require('shelljs');
+const tippecanoe = require('tippecanoe');
+const mapshaper = require('mapshaper');
 const axios = require('axios');
 const { range, omit } = require('lodash');
 const tilelive = require('@mapbox/tilelive');
@@ -19,6 +20,7 @@ const copyAsync = promisify(tilelive.copy);
 
 const STEP = process.env.STEP || 1000;
 const OMIT = JSON.parse(process.env.OMIT);
+let VECTOR_LAYERS = [];
 
 let access_token;
 
@@ -65,7 +67,17 @@ const loadLayer = async layer => {
 
 const upload = async () => {
   console.log('Creating MBTiles');
-  shell.exec('./tiles.sh');
+  await mapshaper.runCommands(
+    `-i geojson/final/treespoint.geojson -each "size=Math.floor(Math.random() * 3)" -each "shape=Math.floor(Math.random() * 3)"
+    -o geojson/final/treespoint.geojson force format=geojson`
+  );
+  tippecanoe(VECTOR_LAYERS, {
+    f: true,
+    Z: process.env.MIN_ZOOM || 9,
+    z: process.env.MAX_ZOOM || 16,
+    r1: true,
+    o: 'tiles.mbtiles',
+  });
   console.log();
 
   console.log('Uploading vector tiles to S3');
@@ -99,7 +111,14 @@ const main = async () => {
         .reduce(async (previousPromise, layer) => {
           await previousPromise;
           return loadLayer(layer)
+            .then(() =>
+              mapshaper.runCommands(
+                `-i geojson/${layer.name}*.geojson combine-files -merge-layers
+                -o geojson/final/${layer.name.toLowerCase()}.geojson force format=geojson id-field=objectid`
+              )
+            )
             .then(() => {
+              VECTOR_LAYERS.push(`geojson/final/${layer.name.toLowerCase()}.geojson`);
               return console.log(`${layer.name} loaded`);
             })
             .catch(err => console.log(err));
@@ -141,6 +160,8 @@ const authenticate = () => {
 };
 
 if (argv.upload) {
+  const files = fs.readdirSync('geojson/final');
+  VECTOR_LAYERS = files.map(f => `geojson/final/${f}`);
   upload();
 } else {
   authenticate().then(() => main());
