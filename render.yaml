@@ -6,7 +6,7 @@ services:
     branch: attribute-updates
     region: oregon
     env: node
-    healthCheckPath: /layers
+    healthCheckPath: /health
     buildCommand: yarn
     startCommand: yarn start
     envVars:
