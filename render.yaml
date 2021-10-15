@@ -3,7 +3,7 @@ services:
   - type: web
     name: highways-search
     repo: https://github.com/imaginerio/imaginerioSearch.git
-    branch: attribute-updates
+    branch: thematic
     region: oregon
     env: node
     healthCheckPath: /health
@@ -14,7 +14,9 @@ services:
       - key: DATABASE
         value: HighwaysWaterways_GDB
       - key: OMIT
-        value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly", "VulnerabilityPoly"]'
+        value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
+      - key: THEMATIC
+        value: '["VulnerabilityPoly"]' 
       - key: MAPPING
         value: highways
       - key: DB_URL
@@ -25,7 +27,7 @@ services:
     name: highways-database-seeder
     region: oregon
     repo: https://github.com/imaginerio/imaginerioSearch.git
-    branch: attribute-updates
+    branch: thematic
     env: node
     buildCommand: yarn
     startCommand: yarn db:job
@@ -36,7 +38,9 @@ services:
       - key: DATABASE
         value: HighwaysWaterways_GDB
       - key: OMIT
-        value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly", "VulnerabilityPoly"]'
+        value: '["PrecipitationPoint", "ImmigrantBusinessPoint", "Complains311Point", "ChemicalCompositionPoint", "SocioeconomicPoly", "SeaLevelRisePoly", "OverallPoly", "MinorityStatusPoly", "HousingPoly", "HouseholdPoly", "FloodPoly"]'
+      - key: THEMATIC
+        value: '["VulnerabilityPoly"]' 
       - key: MAPPING
         value: highways
       - key: DB_URL
