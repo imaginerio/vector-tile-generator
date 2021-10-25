@@ -114,7 +114,11 @@ const main = () => {
             });
         }, Promise.resolve());
     })
-    .then(upload);
+    .then(upload)
+    .catch(err => {
+      spinner.fail(err);
+      process.exit(1);
+    });
 };
 
 const authenticate = () => {
