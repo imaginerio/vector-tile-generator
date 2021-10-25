@@ -42,7 +42,10 @@ const loadFeatures = async (i, count, step, layer) => {
       authenticate().then(() => main());
       return Promise.reject();
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      console.log(err);
+      process.exit(1);
+    });
 };
 
 const loadLayer = async layer => {
@@ -102,10 +105,17 @@ const main = async () => {
             .then(() => {
               return console.log(`${layer.name} loaded`);
             })
-            .catch(err => console.log(err));
+            .catch(err => {
+              console.log(err);
+              process.exit(1);
+            });
         }, Promise.resolve());
     })
-    .then(upload);
+    .then(upload)
+    .catch(err => {
+      console.log(err);
+      process.exit(1);
+    });
 };
 
 const authenticate = () => {
