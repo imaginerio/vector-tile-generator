@@ -54,6 +54,7 @@ services:
     schedule: "1 0 * * 6" 
     repo: https://github.com/imaginerio/vector-tile-generator.git
     branch: highways
+    plan: pro
     envVars:
       - fromGroup: tile-generator
       - key: STEP
