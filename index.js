@@ -68,8 +68,11 @@ const loadLayer = async layer => {
 
 const upload = async () => {
   console.log('Creating MBTiles');
-  shell.exec('./tiles.sh');
-  console.log();
+  if (shell.exec('./tiles.sh').code !== 0) {
+    shell.echo('Error: Tile command failed');
+    shell.exit(1);
+    process.exit(1);
+  }
 
   console.log('Uploading vector tiles to S3');
   s3.registerProtocols(tilelive);

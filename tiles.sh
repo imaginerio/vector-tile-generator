@@ -93,9 +93,9 @@ tippecanoe -Z 13 -z 16 -pf -pk -ab -ai -f -o BuildingsPoly.mbtiles \
   -y firstyear \
   -y lastyear \
   -y namealt \
-  geojson/BuildingsPoly*.json \
+  geojson/BuildingsPoly*.geojson \
 
-mapshaper geojson/final/ViewConesPoly.json -points x=longitude y=latitude -o geojson/final/ViewConesPoint.json
-tippecanoe -Z 9 -z 16 -pf -pk -pf -f -o ViewCones.mbtiles geojson/final/ViewConesPoint.json
+mapshaper geojson/ViewConesPoly*.geojson -points x=longitude y=latitude -o geojson/ViewConesPoint.geojson
+tippecanoe -Z 9 -z 16 -pf -pk -pf -f -o ViewCones.mbtiles geojson/ViewConesPoint.geojson
 
 tile-join -pk -f -o tiles.mbtiles *.mbtiles
