@@ -43,8 +43,10 @@ services:
         value: '["VulnerabilityPoly"]' 
       - key: MAPPING
         value: highways
-      - key: CERT_PATH
-        value: /etc/secrets/cert.pem
+      - key: DB_URL
+        fromDatabase:
+          name: highways
+          property: connectionString
   - type: cron
     name: highways-vector-tile-generator
     region: oregon
