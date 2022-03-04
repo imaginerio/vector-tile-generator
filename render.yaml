@@ -10,8 +10,6 @@ services:
     startCommand: yarn start
     envVars:
       - fromGroup: tile-generator
-      - fromGroup: scalegrid
-      - fromGroup: scalegrid-highways
       - key: DATABASE
         value: HighwaysWaterways_GDB
       - key: OMIT
@@ -20,8 +18,10 @@ services:
         value: '["VulnerabilityPoly"]' 
       - key: MAPPING
         value: highways
-      - key: CERT_PATH
-        value: /etc/secrets/cert.pem
+      - key: DB_URL
+        fromDatabase:
+          name: highways
+          property: connectionString
   - type: cron
     name: highways-database-seeder
     region: oregon
@@ -83,3 +83,5 @@ services:
         value: highways-waterways
       - key: TASK
         value: image
+databases:
+  - name: highways
