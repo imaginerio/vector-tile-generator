@@ -34,7 +34,7 @@ let access_token;
 const loadFeatures = async (i, count, step, layer) =>
   axios
     .get(
-      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=objectid,nameshort,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
+      `https://gis.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/${layer.id}/query?where=shape IS NOT NULL&outFields=objectid,nameshort,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(({ data }) => {
@@ -50,7 +50,7 @@ const loadLayer = async layer => {
   const {
     data: { count },
   } = await axios.get(
-    `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true&token=${access_token}`,
+    `https://gis.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&f=json&returnCountOnly=true&token=${access_token}`,
     { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
   );
 
@@ -92,7 +92,7 @@ const main = () => {
   spinner.text = 'Loading layer info';
   axios
     .get(
-      `https://enterprise.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/layers?f=json&token=${access_token}`,
+      `https://gis.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/layers?f=json&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
     .then(({ data: { layers } }) => {
@@ -126,14 +126,14 @@ const authenticate = () => {
   const httpsAgent = new https.Agent({ rejectUnauthorized: false });
   return axios
     .get(
-      `https://enterprise.spatialstudieslab.org/portal/sharing/rest/oauth2/authorize/?client_id=${CLIENT_ID}&response_type=code&expiration=3600&redirect_uri=urn:ietf:wg:oauth:2.0:oob`,
+      `https://gis.spatialstudieslab.org/portal/sharing/rest/oauth2/authorize/?client_id=${CLIENT_ID}&response_type=code&expiration=3600&redirect_uri=urn:ietf:wg:oauth:2.0:oob`,
       { httpsAgent }
     )
     .then(({ data }) => {
       const oauth = data.replace(/^.*"oauth_state":"(.*?)".*$/gs, '$1');
       return axios
         .post(
-          `https://enterprise.spatialstudieslab.org/portal/sharing/oauth2/signin?oauth_state=${oauth}&authorize=true&username=${USERNAME}&password=${PASSWORD}`,
+          `https://gis.spatialstudieslab.org/portal/sharing/oauth2/signin?oauth_state=${oauth}&authorize=true&username=${USERNAME}&password=${PASSWORD}`,
           {},
           { httpsAgent }
         )
@@ -141,7 +141,7 @@ const authenticate = () => {
           const code = res.data.replace(/^.*id="code" value="(.*?)".*$/gs, '$1');
           return axios
             .post(
-              `https://enterprise.spatialstudieslab.org/portal/sharing/oauth2/token?client_id=${CLIENT_ID}&code=${code}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&grant_type=authorization_code`,
+              `https://gis.spatialstudieslab.org/portal/sharing/oauth2/token?client_id=${CLIENT_ID}&code=${code}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&grant_type=authorization_code`,
               {},
               { httpsAgent }
             )
