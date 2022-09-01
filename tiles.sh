@@ -3,6 +3,11 @@ for f in geojson/RoadsLine*.geojson
     mapshaper -i $f -each "namealt = namealt ? namealt.replace(/\\D/gm, '') : null; namealt = namealt === '' ? null : namealt" -o $f force
   done
 
+for f in geojson/*.geojson
+  do
+    mapshaper -i $f -filter remove-empty -o $f force
+  done
+
 tippecanoe -Z 8 -z 11 -pf -pk -ab -ai -f -o RoadsLine-low.mbtiles \
   -l RoadsLine \
   -j '{ "RoadsLine": ["in", "type", "Interstate", "Highway", "Primary", "Secondary"] }' \
