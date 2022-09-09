@@ -37,10 +37,10 @@ const loadFeatures = async (i, count, step, layer) => {
           JSON.stringify(geojson)
         );
       }
+      console.log(data);
       console.log('An error occurred. Retrying');
       // eslint-disable-next-line no-use-before-define
-      authenticate().then(() => main());
-      return Promise.reject();
+      return authenticate().then(() => main());
     })
     .catch(err => {
       console.log(err);
