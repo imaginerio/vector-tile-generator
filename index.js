@@ -30,14 +30,14 @@ const loadFeatures = async (i, count, step, layer) => {
     )
     .then(async ({ data }) => {
       console.log(`${layer.name}: Loading features ${i} / ${count}`);
-      const geojson = omit(data, 'exceededTransferLimit');
+      const json = typeof data === 'string' ? JSON.parse(data) : data;
+      const geojson = omit(json, 'exceededTransferLimit');
       if (geojson.features) {
         return fs.promises.writeFile(
           path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
           JSON.stringify(geojson)
         );
       }
-      console.log(data);
       console.log('An error occurred. Retrying');
       // eslint-disable-next-line no-use-before-define
       return authenticate().then(() => main());
