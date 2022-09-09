@@ -30,7 +30,16 @@ const loadFeatures = async (i, count, step, layer) => {
     )
     .then(async ({ data }) => {
       console.log(`${layer.name}: Loading features ${i} / ${count}`);
-      const json = typeof data === 'string' ? JSON.parse(data) : data;
+      let json = data;
+      if (typeof json === 'string') {
+        try {
+          json = JSON.parse(data);
+        } catch (e) {
+          console.log(e);
+          console.log(data);
+          return Promise.resolve();
+        }
+      }
       const geojson = omit(json, 'exceededTransferLimit');
       if (geojson.features) {
         return fs.promises.writeFile(
