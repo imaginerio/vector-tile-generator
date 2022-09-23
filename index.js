@@ -37,7 +37,6 @@ const loadFeatures = async (i, count, step, layer) => {
         } catch (e) {
           console.log(e);
           console.log(data);
-          return Promise.resolve();
         }
       }
       const geojson = omit(json, 'exceededTransferLimit');
