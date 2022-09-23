@@ -49,7 +49,7 @@ const loadFeatures = async (i, count, step, layer) => {
       }
       console.log('An error occurred. Retrying');
       // eslint-disable-next-line no-use-before-define
-      return authenticate().then(() => main());
+      return loadFeatures(i, count, step, layer);
     })
     .catch(err => {
       console.log(err);
