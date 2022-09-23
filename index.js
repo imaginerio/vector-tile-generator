@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 /* eslint-disable camelcase */
 require('dotenv').config();
 const { argv } = require('yargs');
@@ -31,20 +32,39 @@ const spinner = ora('Generating vector tiles\n').start();
 
 let access_token;
 
-const loadFeatures = async (i, count, step, layer) =>
-  axios
+const loadFeatures = async (i, count, step, layer) => {
+  return axios
     .get(
       `https://gis.spatialstudieslab.org/server/rest/services/Hosted/${process.env.DATABASE}/FeatureServer/${layer.id}/query?where=objectid IS NOT NULL&outFields=objectid,nameshort,name,firstyear,lastyear,type&f=geojson&resultRecordCount=${step}&resultOffset=${i}&token=${access_token}`,
       { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }
     )
-    .then(({ data }) => {
-      spinner.text = `${layer.name}: Loading features ${i} / ${count}`;
-      return fs.promises.writeFile(
-        path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
-        JSON.stringify(omit(data, 'exceededTransferLimit'))
-      );
+    .then(async ({ data }) => {
+      console.log(`${layer.name}: Loading features ${i} / ${count}`);
+      let json = data;
+      if (typeof json === 'string') {
+        try {
+          json = JSON.parse(data);
+        } catch (e) {
+          console.log(e);
+          console.log(data);
+        }
+      }
+      const geojson = omit(json, 'exceededTransferLimit');
+      if (geojson.features) {
+        return fs.promises.writeFile(
+          path.join(__dirname, 'geojson/', `${layer.name}-${i}.geojson`),
+          JSON.stringify(omit(data, 'exceededTransferLimit'))
+        );
+      }
+      console.log('An error occurred. Retrying');
+      // eslint-disable-next-line no-use-before-define
+      return loadFeatures(i, count, step, layer);
     })
-    .catch((err) => console.log(err))
+    .catch(err => {
+      console.log(err);
+      process.exit(1);
+    });
+};
 
 const loadLayer = async layer => {
   spinner.start(`${layer.name}: Loading features`);
