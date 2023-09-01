@@ -82,7 +82,7 @@ const upload = async () => {
     process.exit(1);
   }
 
-  console.log('Uploading vector tiles to S3');
+  console.log(`Uploading vector tiles to ${process.env.AWS_BUCKET}`);
   s3.registerProtocols(tilelive);
   MBTiles.registerProtocols(tilelive);
 
