@@ -104,3 +104,7 @@ mapshaper geojson/ViewConesPoly*.geojson -points x=longitude y=latitude -o geojs
 tippecanoe -Z 9 -z 16 -pf -pk -pf -f -o ViewCones.mbtiles geojson/ViewConesPoint.geojson
 
 tile-join -pk -f -o tiles.mbtiles *.mbtiles
+
+mb-util --image_format=pbf tiles.mbtiles tiles
+
+aws s3 sync tiles s3://${AWS_BUCKET}/base --acl public-read --cache-control max-age=31536000 --delete
